@@ -3,10 +3,15 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require("body-parser");
+const dns = require('dns');
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
 
+const options = {
+  all:true,
+};
+  
 let urls = []
 
 app.use(bodyParser.urlencoded({ extended: "false" }));
@@ -38,13 +43,34 @@ app.get('/api/shorturl/:id', function(req, res) {
 })
 
 app.post('/api/shorturl', function(req, res) {
-  const {url: urlBody} = req.body
-  const url = urls.find(url => url["original_url"] === urlBody)
-  
-  if (url) {
-    return res.send(url)
-  }
+  const urlBody =  req.body.url
+  const httpRegex = /^(http|https)(:\/\/)/
 
+  if (!httpRegex.test(urlBody)) {
+    return res.json({ error: 'invalid url' })
+  }
+  
+  // Calling dns.lookup() for hostname
+  //  geeksforgeeks.org and displaying
+  // them in console as a callback
+  const urlObject = new URL(urlBody)
+
+  dns.lookup(urlObject.hostname, (error, address, family) => {
+    if (error) reject({ error: 'invalid url' })
+    console.log("dns lookup address: ", address)
+  })
+  
+  const url = urls.find(url => url["original_url"] === urlBody)
+  const regex = /^(http|https)(:\/\/)/
+  
+  console.log("urlBody:", urlBody,"regex: ", regex.test(urlBody))
+  
+  //if (!regex.test(urlBody)) 
+    //return res.send({error: 'Invalid URL'})
+  
+  if (url) 
+    return res.send(url)
+  
   const newShortur = {"original_url": urlBody,"short_url": urls.length + 1}
   urls.push(newShortur)
   res.send(newShortur)
